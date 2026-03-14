@@ -9,7 +9,7 @@ Biometric mobile-money payment MVP. Customers register, enroll their face, and p
 | Backend | Supabase only (Postgres + pgvector + Edge Functions + Storage) |
 | Frontend | TypeScript · Vite · Vanilla TS (no React, no framework) |
 | Face AI | face-api.js (Facenet, 128-d embeddings) — runs in the browser |
-| Payments | Snippe (STK/USSD push) |
+| Payments | Snippe + Tembo (STK/USSD push) |
 | SMS | Briq |
 
 ## Prerequisites
@@ -28,8 +28,8 @@ Run the migration in the Supabase SQL editor, or use the CLI:
 # If using Supabase CLI with linked project
 supabase db push
 
-# Or paste the contents of supabase/migrations/001_init.sql into
-# Supabase Dashboard → SQL Editor → New Query
+# Or paste migrations in order into Supabase Dashboard → SQL Editor:
+# 001_init.sql, then 002_payment_providers.sql
 ```
 
 ### 2. Create a Merchant (for testing)
@@ -62,11 +62,26 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 **Supabase Edge Function secrets** (set via CLI or Dashboard):
 
 ```bash
+# Required: at least one payment provider
 supabase secrets set SNIPPE_API_KEY=your-snippe-key
-supabase secrets set BRIQ_API_KEY=your-briq-key
+supabase secrets set TEMBO_ACCOUNT_ID=your-tembo-account-id
+supabase secrets set TEMBO_SECRET_KEY=your-tembo-secret-key
+
+# Optional: prefer one provider (default: snippe)
+supabase secrets set PAYMENT_PROVIDER=snippe   # or tembo
+
+# Tembo sandbox for testing
+supabase secrets set TEMBO_SANDBOX=true
+
+# Webhook base (required for callbacks)
 supabase secrets set WEBHOOK_BASE_URL=https://your-project.supabase.co/functions/v1
+
+# Optional
+supabase secrets set BRIQ_API_KEY=your-briq-key
 supabase secrets set USD_TO_TZS_RATE=2600
 ```
+
+**Payment providers**: FaceLipa supports **Snippe** and **Tembo**. Configure at least one. If both are set, the system tries the preferred provider first (via `PAYMENT_PROVIDER`), then falls back to the other on failure.
 
 ### 5. Deploy Edge Functions
 
@@ -75,6 +90,7 @@ supabase functions deploy enroll-face --no-verify-jwt
 supabase functions deploy facepay --no-verify-jwt
 supabase functions deploy charge-by-face --no-verify-jwt
 supabase functions deploy snippe-webhook --no-verify-jwt
+supabase functions deploy tembo-webhook --no-verify-jwt
 supabase functions deploy deposit --no-verify-jwt
 supabase functions deploy account-summary --no-verify-jwt
 ```
@@ -85,13 +101,10 @@ Or deploy all:
 supabase functions deploy --no-verify-jwt
 ```
 
-### 6. Configure Snippe Webhook
+### 6. Configure Webhooks
 
-In the Snippe dashboard, set the webhook URL to:
-
-```
-https://your-project.supabase.co/functions/v1/snippe-webhook
-```
+- **Snippe**: In the Snippe dashboard, set webhook URL to `https://your-project.supabase.co/functions/v1/snippe-webhook`
+- **Tembo**: The callback URL is sent per-request; ensure `WEBHOOK_BASE_URL` is set. Tembo will POST to `.../tembo-webhook`
 
 ### 7. Run Frontend
 
@@ -105,6 +118,21 @@ Open:
 
 - **Customer**: http://localhost:5173/bank.html
 - **Merchant**: http://localhost:5173/merchant.html
+
+### 8. Deploy to Vercel
+
+Connect the repo to [Vercel](https://vercel.com). The `vercel.json` is preconfigured:
+
+- **Root Directory**: leave default (project root)
+- **Build Command**: `npm run download-models --prefix frontend && npm run build --prefix frontend`
+- **Output Directory**: `frontend/dist`
+
+Add environment variables in Vercel Dashboard → Settings → Environment Variables:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+After deploy: `https://your-app.vercel.app/bank.html` (customer), `https://your-app.vercel.app/merchant.html` (merchant).
 
 ## End-to-End Walkthrough
 
@@ -141,6 +169,7 @@ facelipa/
 │   │   ├── facepay/
 │   │   ├── charge-by-face/
 │   │   ├── snippe-webhook/
+│   │   ├── tembo-webhook/
 │   │   ├── account-summary/
 │   │   ├── deposit/
 │   │   └── _shared/

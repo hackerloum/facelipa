@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { createSnippeCharge } from '../_shared/snippe.ts'
+import { initiatePayment } from '../_shared/payment.ts'
 import { parseEmbedding, cosineSimilarity } from '../_shared/embedding.ts'
 
 const corsHeaders = {
@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     // Get default wallet
     const { data: wallet } = await supabase
       .from('wallets')
-      .select('id, provider_wallet_id')
+      .select('id, provider_wallet_id, provider')
       .eq('user_id', profile.id)
       .limit(1)
       .single()
@@ -127,23 +127,26 @@ Deno.serve(async (req) => {
 
     if (txErr) throw txErr
 
-    // Call Snippe STK push
-    const { chargeId, error: snippeErr } = await createSnippeCharge(amount, phone, currency)
+    const result = await initiatePayment(amount, phone, currency, tx!.id, wallet?.provider)
 
-    if (snippeErr) {
+    if (result.error || !result.chargeId) {
       await supabase.from('transactions').update({ status: 'FAILED' }).eq('id', tx!.id)
       return new Response(
-        JSON.stringify({ error: 'Payment initiation failed', detail: snippeErr, transaction: tx }),
+        JSON.stringify({ error: 'Payment initiation failed', detail: result.error, transaction: tx }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    await supabase.from('transactions').update({ snippe_charge_id: chargeId }).eq('id', tx!.id)
+    const updatePayload = result.provider === 'snippe'
+      ? { snippe_charge_id: result.chargeId, payment_provider: 'snippe' }
+      : { tembo_transaction_id: result.chargeId, payment_provider: 'tembo' }
+    await supabase.from('transactions').update(updatePayload).eq('id', tx!.id)
 
     return new Response(
       JSON.stringify({
         ...tx,
-        snippe_charge_id: chargeId,
+        charge_id: result.chargeId,
+        payment_provider: result.provider,
         message: 'Enter PIN on your phone to complete payment',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
