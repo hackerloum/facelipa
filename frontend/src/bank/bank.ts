@@ -247,6 +247,10 @@ export function renderBank(): HTMLElement {
       statusEl.textContent = data.error
       return
     }
+    if (!data.user_id) {
+      statusEl.textContent = 'Registration succeeded but no user ID returned.'
+      return
+    }
     setUserId(data.user_id)
     statusEl.textContent = ''
     showMainView()

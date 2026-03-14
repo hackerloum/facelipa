@@ -188,7 +188,11 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
       statusEl.className = 'register-status error'
       return
     }
-
+    if (!data.user_id) {
+      statusEl.textContent = 'Registration succeeded but no user ID returned.'
+      statusEl.className = 'register-status error'
+      return
+    }
     setUserId(data.user_id)
     statusEl.textContent = 'Registration successful! Redirecting...'
     statusEl.className = 'register-status success'
