@@ -211,9 +211,9 @@ export function renderBank(): HTMLElement {
       embedding = await getFaceEmbeddingFromFile(regFaceFile)
     } catch (e) {
       const msg = (e as Error).message
-      const isJsonError = msg.includes('JSON') && msg.includes('position')
-      statusEl.textContent = isJsonError
-        ? 'Face models failed to load. Run: npm run download-models (in frontend folder)'
+      const isModelError = /JSON|position|parse|Unexpected/.test(msg)
+      statusEl.textContent = isModelError
+        ? 'Face models failed to load. Run: npm run download-models (local) or redeploy (Vercel).'
         : `Error: ${msg}`
       return
     }
