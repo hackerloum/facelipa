@@ -9,6 +9,7 @@ function showView(path: string): void {
 
   if (normalized === '/' || normalized === '') {
     document.getElementById('app')!.classList.add('full-width')
+    document.getElementById('app')!.classList.remove('app-portal')
     mount(app, renderLanding((p) => {
       window.history.pushState({}, '', p)
       showView(p)
@@ -17,17 +18,26 @@ function showView(path: string): void {
   }
 
   document.getElementById('app')!.classList.remove('full-width')
+  document.getElementById('app')!.classList.add('app-portal')
 
   if (normalized === '/merchant') {
     import('./merchant/merchant').then(({ renderMerchant }) => {
       const wrapper = el('div', { className: 'app-wrapper' })
       const nav = el('nav', { className: 'app-nav' })
-      const bankLink = el('a', { href: '/' }, 'Home')
+      const logoLink = el('a', { href: '/', className: 'app-nav-logo' }, 'FaceLipa')
+      const homeLink = el('a', { href: '/' }, 'Home')
+      const bankLink = el('a', { href: '/bank' }, 'Customer')
       const merchantLink = el('a', { href: '/merchant', className: 'active' }, 'Merchant')
-      bankLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      logoLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      homeLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      bankLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/bank'); showView('/bank') }
       merchantLink.onclick = (e) => { e.preventDefault() }
-      nav.appendChild(bankLink)
-      nav.appendChild(merchantLink)
+      nav.appendChild(logoLink)
+      const navLinks = el('div', { className: 'app-nav-links' })
+      navLinks.appendChild(homeLink)
+      navLinks.appendChild(bankLink)
+      navLinks.appendChild(merchantLink)
+      nav.appendChild(navLinks)
       wrapper.appendChild(nav)
       wrapper.appendChild(renderMerchant())
       mount(app, wrapper)
@@ -39,16 +49,24 @@ function showView(path: string): void {
     import('./bank/bank').then(({ renderBank }) => {
       const wrapper = el('div', { className: 'app-wrapper' })
       const nav = el('nav', { className: 'app-nav' })
-      const bankLink = el('a', { href: '/bank', className: 'active' }, 'Bank')
+      const logoLink = el('a', { href: '/', className: 'app-nav-logo' }, 'FaceLipa')
+      const homeLink = el('a', { href: '/' }, 'Home')
+      const bankLink = el('a', { href: '/bank', className: 'active' }, 'Customer')
       const merchantLink = el('a', { href: '/merchant' }, 'Merchant')
+      logoLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      homeLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
       bankLink.onclick = (e) => { e.preventDefault() }
       merchantLink.onclick = (e) => {
         e.preventDefault()
         window.history.pushState({}, '', '/merchant')
         showView('/merchant')
       }
-      nav.appendChild(bankLink)
-      nav.appendChild(merchantLink)
+      nav.appendChild(logoLink)
+      const navLinks = el('div', { className: 'app-nav-links' })
+      navLinks.appendChild(homeLink)
+      navLinks.appendChild(bankLink)
+      navLinks.appendChild(merchantLink)
+      nav.appendChild(navLinks)
       wrapper.appendChild(nav)
       wrapper.appendChild(renderBank())
       mount(app, wrapper)
@@ -56,6 +74,8 @@ function showView(path: string): void {
     return
   }
 
+  document.getElementById('app')!.classList.add('full-width')
+  document.getElementById('app')!.classList.remove('app-portal')
   mount(app, renderLanding((p) => {
     window.history.pushState({}, '', p)
     showView(p)

@@ -1,32 +1,28 @@
-* {
-  box-sizing: border-box;
-}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  background: #0f172a;
+.merchant-app {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: #050810;
   color: #e2e8f0;
-  min-height: 100vh;
 }
 
-#app {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
-
-.header {
+.merchant-app .header {
   text-align: center;
   margin-bottom: 2rem;
+  padding-top: 0.5rem;
 }
 
-.header h1 {
+.merchant-app .header h1 {
   font-size: 1.75rem;
+  font-weight: 800;
   margin: 0;
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.subtitle {
+.merchant-app .subtitle {
   color: #94a3b8;
   font-size: 0.9rem;
   margin: 0.25rem 0 0;
@@ -38,13 +34,15 @@ body {
 
 .login-card {
   background: #1e293b;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 2rem;
+  border: 1px solid #334155;
 }
 
 .login-card h2 {
   margin: 0 0 1.5rem;
   font-size: 1.25rem;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -52,83 +50,36 @@ body {
 .login-card input {
   display: block;
   width: 100%;
-  margin-bottom: 0.5rem;
-}
-
-input,
-select {
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #e2e8f0;
-  font-size: 1rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-  color: #94a3b8;
-}
-
-.btn {
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: opacity 0.2s;
-}
-
-.btn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-  width: 100%;
-  margin-top: 0.5rem;
-}
-
-.btn-outline {
-  background: transparent;
-  color: #94a3b8;
-  border: 1px solid #475569;
-  margin-top: 2rem;
-  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .charge-form {
   background: #1e293b;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 16px;
+  padding: 2rem;
   margin-bottom: 1rem;
+  border: 1px solid #334155;
 }
 
 .charge-form h2 {
   margin: 0 0 1rem;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
 .hint {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: #94a3b8;
   margin-bottom: 1rem;
+  line-height: 1.5;
 }
 
 .preview-area {
   margin: 1rem 0;
   max-height: 200px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid #334155;
 }
 
 .preview-area img {
@@ -140,14 +91,21 @@ label {
 .charge-form input,
 .charge-form select {
   width: 100%;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: inherit;
 }
 
 .result-card {
   margin-top: 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
   background: #1e293b;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid #334155;
 }
 
 .result-card .error {
@@ -165,6 +123,41 @@ label {
 }
 
 input[type="file"] {
+  padding: 0.5rem;
+}
+
+.merchant-app .btn {
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.merchant-app .btn-primary {
+  background: linear-gradient(135deg, #22c55e, #059669);
+  color: white;
   width: 100%;
-  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.merchant-app .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.35);
+}
+
+.merchant-app .btn-outline {
+  background: transparent;
+  color: #94a3b8;
+  border: 2px solid #475569;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.merchant-app .btn-outline:hover:not(:disabled) {
+  border-color: #64748b;
+  color: #e2e8f0;
 }
