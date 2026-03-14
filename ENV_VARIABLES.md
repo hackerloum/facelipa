@@ -4,7 +4,7 @@
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_SUPABASE_URL` | Yes | Supabase project URL (e.g. `https://xxx.supabase.co`) |
+| `VITE_SUPABASE_URL` | Yes | Supabase project URL: `https://lzsvaeeeqsaswngrirtt.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Yes | Supabase anonymous/public key |
 
 ---
@@ -35,7 +35,7 @@ Set via: `supabase secrets set KEY=value`
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `WEBHOOK_BASE_URL` | Yes | Base URL for webhooks (e.g. `https://xxx.supabase.co/functions/v1`) |
+| `WEBHOOK_BASE_URL` | Yes | Base URL for webhooks: `https://lzsvaeeeqsaswngrirtt.supabase.co/functions/v1` |
 
 ### Optional
 
@@ -50,7 +50,7 @@ Set via: `supabase secrets set KEY=value`
 
 **Frontend** (`frontend/.env`):
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_URL=https://lzsvaeeeqsaswngrirtt.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
@@ -59,6 +59,6 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 supabase secrets set SNIPPE_API_KEY=sk_xxx
 supabase secrets set TEMBO_ACCOUNT_ID=xxx
 supabase secrets set TEMBO_SECRET_KEY=xxx
-supabase secrets set WEBHOOK_BASE_URL=https://your-project.supabase.co/functions/v1
+supabase secrets set WEBHOOK_BASE_URL=https://lzsvaeeeqsaswngrirtt.supabase.co/functions/v1
 supabase secrets set TEMBO_SANDBOX=true
 ```
