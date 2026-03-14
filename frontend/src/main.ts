@@ -8,12 +8,15 @@ function showView(path: string): void {
   const normalized = path.replace(/\/$/, '') || '/'
 
   if (normalized === '/' || normalized === '') {
+    document.getElementById('app')!.classList.add('full-width')
     mount(app, renderLanding((p) => {
       window.history.pushState({}, '', p)
       showView(p)
     }))
     return
   }
+
+  document.getElementById('app')!.classList.remove('full-width')
 
   if (normalized === '/merchant') {
     import('./merchant/merchant').then(({ renderMerchant }) => {

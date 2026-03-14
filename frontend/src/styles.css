@@ -1,6 +1,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
 #app { max-width: 480px; margin: 0 auto; padding: 1.5rem; }
+#app.full-width { max-width: none; padding: 0; }
 .hidden { display: none !important; }
 .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; }
 .app-nav a { color: #94a3b8; text-decoration: none; }
