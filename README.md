@@ -6,7 +6,7 @@ Biometric mobile-money payment MVP. Customers register, enroll their face, and p
 
 | Layer | Technology |
 |-------|------------|
-| Backend | Supabase only (Postgres + pgvector + Edge Functions + Storage) |
+| Backend | Supabase (Postgres + pgvector + Edge Functions + Storage) **or** FastAPI (see [BACKEND_PROMPT.md](BACKEND_PROMPT.md)) |
 | Frontend | TypeScript · Vite · Vanilla TS (no React, no framework) |
 | Face AI | face-api.js (Facenet, 128-d embeddings) — runs in the browser |
 | Payments | Snippe + Tembo (STK/USSD push) |
@@ -168,6 +168,10 @@ MVP uses permissive dev policies (`using (true)`). **Replace these before produc
 
 See **[ANDROID_APP_PROMPT.md](ANDROID_APP_PROMPT.md)** for a complete build prompt to create a native Java Android app that integrates with this platform. It includes API endpoint specs, request/response formats, face embedding requirements (128-d), and suggested project structure.
 
+## Database Schema
+
+See **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** for full documentation of all tables, columns, relationships, and functions. Use it when building features or onboarding.
+
 ## Repository Structure
 
 ```
@@ -196,6 +200,17 @@ facelipa/
 └── README.md
 ```
 
+## FastAPI Backend (Alternative)
+
+A standalone FastAPI backend is available in `backend/`. It shares the same Supabase Postgres database. See:
+
+- **[BACKEND_PROMPT.md](BACKEND_PROMPT.md)** — Build prompt for AI/code generators
+- **backend/README.md** — Setup and run instructions
+
+```bash
+cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload
+```
+
 ## Out of Scope (MVP)
 
 - JS/TS frameworks (React, Vue, etc.)
@@ -204,4 +219,3 @@ facelipa/
 - Production auth (Supabase Auth)
 - Live camera / video stream
 - Liveness detection
-- Backend outside Supabase Edge Functions
