@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceLipa - Bank Portal</title>
+  <link rel="stylesheet" href="/src/bank/bank.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>FaceLipa</h1>
+      <p class="subtitle">Biometric Mobile Money</p>
+    </header>
+
+    <div id="auth-view" class="view">
+      <div class="auth-card">
+        <h2>Get Started</h2>
+        <button id="btn-open-account" class="btn btn-primary">Open an account</button>
+        <p class="auth-divider">or</p>
+        <div class="auth-signin">
+          <label for="input-user-id">Sign in with User ID</label>
+          <input type="text" id="input-user-id" placeholder="Paste your UUID" />
+          <button id="btn-sign-in" class="btn btn-secondary">Sign in</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="main-view" class="view hidden">
+      <nav class="tabs">
+        <button class="tab active" data-tab="account">Account</button>
+        <button class="tab" data-tab="enroll">Enroll Face</button>
+        <button class="tab" data-tab="wallets">Wallets</button>
+        <button class="tab" data-tab="pay">Pay</button>
+        <button class="tab" data-tab="statement">Statement</button>
+      </nav>
+
+      <main class="tab-content">
+        <section id="tab-account" class="tab-panel active">
+          <h2>Account</h2>
+          <div class="balance-card">
+            <span class="balance-label">Balance</span>
+            <span id="balance-value" class="balance-value">0.00 TZS</span>
+          </div>
+          <div class="deposit-form">
+            <label for="deposit-amount">Deposit (dev only)</label>
+            <input type="number" id="deposit-amount" placeholder="Amount" min="1" />
+            <button id="btn-deposit" class="btn btn-primary">Deposit</button>
+          </div>
+          <button id="btn-refresh" class="btn btn-secondary">Refresh</button>
+        </section>
+
+        <section id="tab-enroll" class="tab-panel">
+          <h2>Enroll Face</h2>
+          <p class="hint">Upload a clear photo of your face. We'll use it to verify your identity for payments.</p>
+          <input type="file" id="enroll-file" accept="image/*" />
+          <div id="enroll-preview" class="preview-area"></div>
+          <button id="btn-enroll" class="btn btn-primary" disabled>Enroll</button>
+          <p id="enroll-status" class="status"></p>
+        </section>
+
+        <section id="tab-wallets" class="tab-panel">
+          <h2>Wallets</h2>
+          <div class="wallet-form">
+            <label for="wallet-provider">Provider</label>
+            <select id="wallet-provider">
+              <option value="mpesa">M-Pesa</option>
+              <option value="airtel">Airtel Money</option>
+              <option value="halopesa">Halopesa</option>
+              <option value="mixx">Mixx</option>
+            </select>
+            <label for="wallet-id">Phone / Wallet ID</label>
+            <input type="text" id="wallet-id" placeholder="255712345678" />
+            <button id="btn-link-wallet" class="btn btn-primary">Link Wallet</button>
+          </div>
+          <ul id="wallet-list" class="wallet-list"></ul>
+        </section>
+
+        <section id="tab-pay" class="tab-panel">
+          <h2>Pay</h2>
+          <p class="hint">Upload a selfie and enter amount to pay.</p>
+          <input type="file" id="pay-file" accept="image/*" />
+          <div id="pay-preview" class="preview-area"></div>
+          <label for="pay-amount">Amount</label>
+          <input type="number" id="pay-amount" placeholder="Amount" min="1" />
+          <label for="pay-currency">Currency</label>
+          <select id="pay-currency">
+            <option value="TZS">TZS</option>
+          </select>
+          <button id="btn-pay" class="btn btn-primary" disabled>Pay</button>
+          <div id="pay-result" class="result-card"></div>
+        </section>
+
+        <section id="tab-statement" class="tab-panel">
+          <h2>Statement</h2>
+          <button id="btn-load-statement" class="btn btn-secondary">Load Transactions</button>
+          <div id="statement-list" class="statement-list"></div>
+        </section>
+      </main>
+
+      <button id="btn-sign-out" class="btn btn-outline">Sign out</button>
+    </div>
+  </div>
+  <script type="module" src="/src/bank/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FaceLipa - Merchant Portal</title>
+  <link rel="stylesheet" href="/src/merchant/merchant.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>FaceLipa Merchant</h1>
+      <p class="subtitle">Charge by Face</p>
+    </header>
+
+    <div id="login-view" class="view">
+      <div class="login-card">
+        <h2>Merchant Login</h2>
+        <label for="merchant-id">Merchant ID</label>
+        <input type="text" id="merchant-id" placeholder="UUID" />
+        <label for="merchant-api-key">API Key</label>
+        <input type="password" id="merchant-api-key" placeholder="API Key" />
+        <button id="btn-login" class="btn btn-primary">Login</button>
+        <p id="login-error" class="error"></p>
+      </div>
+    </div>
+
+    <div id="charge-view" class="view hidden">
+      <div class="charge-form">
+        <h2>Charge Customer</h2>
+        <p class="hint">Capture customer's face photo, enter amount, and initiate payment.</p>
+        <input type="file" id="charge-file" accept="image/*" />
+        <div id="charge-preview" class="preview-area"></div>
+        <label for="charge-amount">Amount</label>
+        <input type="number" id="charge-amount" placeholder="Amount" min="1" />
+        <label for="charge-currency">Currency</label>
+        <select id="charge-currency">
+          <option value="TZS">TZS</option>
+        </select>
+        <label for="charge-reference">Reference (optional)</label>
+        <input type="text" id="charge-reference" placeholder="Order #123" />
+        <button id="btn-charge" class="btn btn-primary" disabled>Charge</button>
+      </div>
+      <div id="charge-result" class="result-card"></div>
+      <button id="btn-logout" class="btn btn-outline">Logout</button>
+    </div>
+  </div>
+  <script type="module" src="/src/merchant/main.ts"></script>
+</body>
+</html>
