@@ -1,13 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const url = import.meta.env.VITE_SUPABASE_URL || ''
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!url || !anonKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY')
+  console.warn('[FaceLipa] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — API calls will fail.')
 }
 
-export const supabase = createClient(url, anonKey)
+export const supabase = createClient(url || 'https://placeholder.supabase.co', anonKey || 'placeholder')
+
 
 const FUNCTIONS_BASE = `${url.replace(/\/$/, '')}/functions/v1`
 
