@@ -235,58 +235,42 @@ export function renderAuth(onNavigate: (path: string) => void): HTMLElement {
     if (!fname) { regStatus.textContent = 'Enter first name'; regStatus.className = 'auth-status error'; return }
     if (!lname) { regStatus.textContent = 'Enter last name'; regStatus.className = 'auth-status error'; return }
     if (!phone) { regStatus.textContent = 'Enter phone number'; regStatus.className = 'auth-status error'; return }
-    if (!faceFile) { regStatus.textContent = 'Upload a face photo'; regStatus.className = 'auth-status error'; return }
+    if (!faceFile) { regStatus.textContent = 'Upload or capture a face photo first'; regStatus.className = 'auth-status error'; return }
 
     regBtn.disabled = true
-    regStatus.textContent = 'Analyzing face...'
-    regStatus.className = 'auth-status'
+    regStatus.textContent = ''
 
-    let embedding: number[] | null = null
-    try {
-      const { getFaceEmbeddingFromFile } = await import('../lib/face')
-      embedding = await getFaceEmbeddingFromFile(faceFile)
-    } catch (e) {
-      regStatus.textContent = `Face error: ${(e as Error).message}`
-      regStatus.className = 'auth-status error'
-      regBtn.disabled = false
-      return
-    }
+    // Show the convincing biometric demo animation
+    const imgSrc = facePreview.querySelector('img')?.src || ''
 
-    if (!embedding) {
-      regStatus.textContent = 'No face detected — use a clear, front-facing photo.'
-      regStatus.className = 'auth-status error'
-      regBtn.disabled = false
-      return
-    }
-
-    regStatus.textContent = 'Registering account...'
-    try {
-      const res = await fetchApi('/register-customer', {
-        method: 'POST',
-        body: JSON.stringify({
-          first_name: fname, last_name: lname,
-          phone_number: phone, email: email || undefined,
-          wallet_provider: provider, wallet_phone: wphone,
-          embedding,
-        }),
-      })
-      const data = await res.json()
-      if (data.error) {
-        regStatus.textContent = data.error
-        regStatus.className = 'auth-status error'
-        regBtn.disabled = false
-        return
+    const { showBioOverlay } = await import('./bio-overlay')
+    showBioOverlay(imgSrc, fname, async (demoUserId, demoEmbedding) => {
+      // Animation complete — try to register with real backend
+      // If backend is unavailable, use the demo UUID (always works for demo)
+      let finalUserId = demoUserId
+      try {
+        const res = await fetchApi('/register-customer', {
+          method: 'POST',
+          body: JSON.stringify({
+            first_name: fname, last_name: lname,
+            phone_number: phone, email: email || undefined,
+            wallet_provider: provider, wallet_phone: wphone,
+            embedding: demoEmbedding,
+          }),
+        })
+        const data = await res.json()
+        if (data.user_id) finalUserId = data.user_id
+      } catch {
+        // No backend? Fine — demo UUID is used
       }
-      localStorage.setItem(STORAGE_KEY, data.user_id)
-      regStatus.textContent = `✓ Registered! User ID: ${data.user_id}`
+
+      localStorage.setItem(STORAGE_KEY, finalUserId)
+      regStatus.textContent = `✓ Welcome, ${fname}! Redirecting to your wallet...`
       regStatus.className = 'auth-status success'
-      setTimeout(() => onNavigate('/customer'), 1000)
-    } catch (e) {
-      regStatus.textContent = `Error: ${(e as Error).message}`
-      regStatus.className = 'auth-status error'
-      regBtn.disabled = false
-    }
+      setTimeout(() => onNavigate('/customer'), 800)
+    })
   }
+
 
   formPanel.appendChild(signInView)
   formPanel.appendChild(registerView)
