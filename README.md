@@ -2,6 +2,8 @@
 
 Biometric mobile-money payment MVP. Customers register, enroll their face, and pay at merchant terminals by face scan. The merchant captures the customer's face → identifies them → initiates an STK/USSD push → customer enters PIN → transaction completes and balance is deducted.
 
+**Backend (ngrok):** https://9a96-102-218-28-192.ngrok-free.app — see **[API.md](API.md)** for full API reference.
+
 ## Tech Stack
 
 | Layer | Technology |
