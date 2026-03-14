@@ -57,9 +57,12 @@ export function renderBank(): HTMLElement {
 
   authCard.appendChild(el('p', { className: 'auth-divider' }, 'Already have an account?'))
   const signin = el('div', { className: 'auth-signin' })
-  signin.appendChild(el('label', { htmlFor: 'input-user-id' }, 'Sign in with User ID'))
-  signin.appendChild(el('input', { id: 'input-user-id', type: 'text', placeholder: 'Paste your UUID' }) as HTMLInputElement)
+  signin.appendChild(el('label', { htmlFor: 'signin-phone' }, 'Phone number'))
+  signin.appendChild(el('input', { id: 'signin-phone', type: 'tel', placeholder: '255712345678' }) as HTMLInputElement)
+  signin.appendChild(el('label', { htmlFor: 'signin-email' }, 'Email (optional)'))
+  signin.appendChild(el('input', { id: 'signin-email', type: 'email', placeholder: 'john@example.com' }) as HTMLInputElement)
   signin.appendChild(el('button', { id: 'btn-sign-in', className: 'btn btn-secondary' }, 'Sign in'))
+  signin.appendChild(el('p', { id: 'signin-status', className: 'status' }))
   authCard.appendChild(signin)
   authView.appendChild(authCard)
   root.appendChild(authView)
@@ -143,10 +146,12 @@ export function renderBank(): HTMLElement {
     authView.classList.remove('hidden')
     mainView.classList.add('hidden')
   }
+
   function showMainView(): void {
     authView.classList.add('hidden')
     mainView.classList.remove('hidden')
   }
+
   function switchTab(tabId: string): void {
     root.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
     root.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
@@ -157,16 +162,20 @@ export function renderBank(): HTMLElement {
   async function loadAccountSummary(): Promise<void> {
     const userId = getUserId()
     if (!userId) return
+
     const res = await fetchWithAuth('/account-summary', { method: 'GET', userId })
     if (res.status === 401) {
       clearUserId()
       showAuthView()
       return
     }
+
     const data = await res.json()
     if (data.error) return
+
     const balanceEl = root.querySelector('#balance-value')!
     balanceEl.textContent = `${Number(data.balance).toFixed(2)} TZS`
+
     const walletList = root.querySelector('#wallet-list')!
     walletList.innerHTML = ''
     for (const w of data.wallets || []) {
@@ -180,12 +189,14 @@ export function renderBank(): HTMLElement {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     regFaceFile = file
+
     const preview = root.querySelector('#reg-face-preview')!
     preview.innerHTML = ''
     const img = document.createElement('img')
     img.src = URL.createObjectURL(file)
     img.alt = 'Preview'
     preview.appendChild(img)
+
     ;(root.querySelector('#btn-register') as HTMLButtonElement).disabled = false
   })
 
@@ -213,6 +224,7 @@ export function renderBank(): HTMLElement {
       statusEl.textContent = `Error: ${(e as Error).message}`
       return
     }
+
     if (!embedding) {
       statusEl.textContent = 'No face detected. Use a clearer photo looking straight at the camera.'
       return
@@ -231,11 +243,13 @@ export function renderBank(): HTMLElement {
         embedding,
       }),
     })
+
     const data = await res.json()
     if (data.error) {
       statusEl.textContent = data.error
       return
     }
+
     setUserId(data.user_id)
     statusEl.textContent = ''
     showMainView()
@@ -243,31 +257,63 @@ export function renderBank(): HTMLElement {
     alert('Registration successful! You can now pay with your face.')
   })
 
-  root.querySelector('#btn-sign-in')!.addEventListener('click', () => {
-    const id = (root.querySelector('#input-user-id') as HTMLInputElement).value.trim()
-    if (!id) { alert('Enter your User ID'); return }
-    setUserId(id)
+  root.querySelector('#btn-sign-in')!.addEventListener('click', async () => {
+    const phone = (root.querySelector('#signin-phone') as HTMLInputElement).value.trim()
+    const email = (root.querySelector('#signin-email') as HTMLInputElement).value.trim()
+    const statusEl = root.querySelector('#signin-status') as HTMLElement
+
+    if (!phone) {
+      statusEl.textContent = 'Phone number is required'
+      return
+    }
+
+    statusEl.textContent = 'Signing in...'
+    const res = await fetchApi('/login-customer', {
+      method: 'POST',
+      body: JSON.stringify({
+        phone_number: phone,
+        email: email || undefined,
+      }),
+    })
+
+    const data = await res.json()
+    if (data.error) {
+      statusEl.textContent = data.error
+      return
+    }
+
+    setUserId(data.user_id)
+    statusEl.textContent = ''
     showMainView()
-    loadAccountSummary()
+    await loadAccountSummary()
   })
+
   root.querySelector('#btn-sign-out')!.addEventListener('click', () => {
     clearUserId()
     showAuthView()
+    ;(root.querySelector('#signin-phone') as HTMLInputElement).value = ''
+    ;(root.querySelector('#signin-email') as HTMLInputElement).value = ''
   })
+
   root.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab((tab as HTMLElement).dataset.tab!))
   })
+
   root.querySelector('#btn-deposit')!.addEventListener('click', async () => {
     const userId = getUserId()
     if (!userId) return
+
     const amount = Number((root.querySelector('#deposit-amount') as HTMLInputElement).value)
     if (isNaN(amount) || amount <= 0) { alert('Enter a valid amount'); return }
+
     const res = await fetchWithAuth('/deposit', { method: 'POST', userId, body: JSON.stringify({ amount }) })
     const data = await res.json()
     if (data.error) { alert(data.error); return }
+
     loadAccountSummary()
     ;(root.querySelector('#deposit-amount') as HTMLInputElement).value = ''
   })
+
   root.querySelector('#btn-refresh')!.addEventListener('click', () => loadAccountSummary())
 
   let enrollFile: File | null = null
@@ -275,23 +321,30 @@ export function renderBank(): HTMLElement {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     enrollFile = file
+
     const preview = root.querySelector('#enroll-preview')!
     preview.innerHTML = ''
     const img = document.createElement('img')
     img.src = URL.createObjectURL(file)
     img.alt = 'Preview'
     preview.appendChild(img)
+
     ;(root.querySelector('#btn-enroll') as HTMLButtonElement).disabled = false
   })
+
   root.querySelector('#btn-enroll')!.addEventListener('click', async () => {
     if (!enrollFile) return
+
     const userId = getUserId()
     if (!userId) return
+
     const statusEl = root.querySelector('#enroll-status') as HTMLElement
     statusEl.textContent = 'Extracting face...'
+
     try {
       const embedding = await getFaceEmbeddingFromFile(enrollFile)
       if (!embedding) { statusEl.textContent = 'No face detected. Try a clearer photo.'; return }
+
       statusEl.textContent = 'Updating...'
       const res = await fetchWithAuth('/enroll-face', { method: 'POST', userId, body: JSON.stringify({ embedding }) })
       const data = await res.json()
@@ -305,17 +358,34 @@ export function renderBank(): HTMLElement {
   root.querySelector('#btn-link-wallet')!.addEventListener('click', async () => {
     const userId = getUserId()
     if (!userId) return
+
     const provider = (root.querySelector('#wallet-provider') as HTMLSelectElement).value
     const walletId = (root.querySelector('#wallet-id') as HTMLInputElement).value.trim()
     if (!walletId) { alert('Enter phone or wallet ID'); return }
-    let { data: profile } = await supabase.from('user_profiles').select('id').eq('external_user_id', userId).single()
+
+    let { data: profile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('external_user_id', userId)
+      .single()
+
     if (!profile) {
-      const { data: newProfile, error: insertErr } = await supabase.from('user_profiles').insert({ external_user_id: userId, phone_number: 'pending' }).select('id').single()
+      const { data: newProfile, error: insertErr } = await supabase
+        .from('user_profiles')
+        .insert({ external_user_id: userId, phone_number: 'pending' })
+        .select('id')
+        .single()
+
       if (insertErr || !newProfile) { alert('Could not create profile'); return }
       profile = newProfile
     }
-    const { error } = await supabase.from('wallets').insert({ user_id: profile.id, provider, provider_wallet_id: walletId, currency: 'TZS' })
+
+    const { error } = await supabase
+      .from('wallets')
+      .insert({ user_id: profile.id, provider, provider_wallet_id: walletId, currency: 'TZS' })
+
     if (error) { alert(error.message); return }
+
     loadAccountSummary()
     ;(root.querySelector('#wallet-id') as HTMLInputElement).value = ''
   })
@@ -325,29 +395,38 @@ export function renderBank(): HTMLElement {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     payFile = file
+
     const preview = root.querySelector('#pay-preview')!
     preview.innerHTML = ''
     const img = document.createElement('img')
     img.src = URL.createObjectURL(file)
     preview.appendChild(img)
+
     ;(root.querySelector('#btn-pay') as HTMLButtonElement).disabled = false
   })
+
   root.querySelector('#btn-pay')!.addEventListener('click', async () => {
     if (!payFile) return
+
     const userId = getUserId()
     if (!userId) return
+
     const amount = Number((root.querySelector('#pay-amount') as HTMLInputElement).value)
     const currency = (root.querySelector('#pay-currency') as HTMLSelectElement).value
     if (isNaN(amount) || amount <= 0) { alert('Enter a valid amount'); return }
+
     const resultEl = root.querySelector('#pay-result') as HTMLElement
     resultEl.innerHTML = 'Extracting face...'
+
     try {
       const embedding = await getFaceEmbeddingFromFile(payFile)
       if (!embedding) { resultEl.innerHTML = '<span class="error">No face detected.</span>'; return }
+
       resultEl.innerHTML = 'Processing payment...'
       const res = await fetchWithAuth('/facepay', { method: 'POST', userId, body: JSON.stringify({ embedding, amount, currency }) })
       const data = await res.json()
       if (data.error) { resultEl.innerHTML = `<span class="error">${data.error}</span>`; return }
+
       resultEl.innerHTML = `<div class="success"><p>Transaction: ${data.id}</p><p>Status: ${data.status}</p><p>${data.message || 'Enter PIN on your phone to complete.'}</p></div>`
       loadAccountSummary()
     } catch (e) {
@@ -358,12 +437,16 @@ export function renderBank(): HTMLElement {
   root.querySelector('#btn-load-statement')!.addEventListener('click', async () => {
     const userId = getUserId()
     if (!userId) return
+
     const res = await fetchWithAuth('/account-summary', { method: 'GET', userId })
     const data = await res.json()
+
     const list = root.querySelector('#statement-list') as HTMLElement
     list.innerHTML = ''
+
     const txs = data.transactions || []
     if (txs.length === 0) { list.innerHTML = '<p>No transactions yet.</p>'; return }
+
     for (const t of txs) {
       const div = el('div', { className: 'statement-item' })
       div.innerHTML = `<span>${t.amount} ${t.currency}</span><span>${t.status}</span><span>${new Date(t.created_at).toLocaleString()}</span>`
