@@ -137,7 +137,11 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
     try {
       embedding = await getFaceEmbeddingFromFile(faceFile)
     } catch (e) {
-      statusEl.textContent = `Error: ${(e as Error).message}`
+      const msg = (e as Error).message
+      const isJsonError = msg.includes('JSON') && msg.includes('position')
+      statusEl.textContent = isJsonError
+        ? 'Face models failed to load. Run: npm run download-models (in frontend folder)'
+        : `Face error: ${msg}`
       statusEl.className = 'register-status error'
       return
     }
@@ -169,7 +173,15 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
       }),
     })
 
-    const data = await res.json()
+    let data: { user_id?: string; error?: string }
+    try {
+      const text = await res.text()
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      statusEl.textContent = `API returned invalid response (status ${res.status}). Check Supabase URL and that Edge Functions are deployed.`
+      statusEl.className = 'register-status error'
+      return
+    }
 
     if (data.error) {
       statusEl.textContent = data.error

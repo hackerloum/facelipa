@@ -210,7 +210,11 @@ export function renderBank(): HTMLElement {
     try {
       embedding = await getFaceEmbeddingFromFile(regFaceFile)
     } catch (e) {
-      statusEl.textContent = `Error: ${(e as Error).message}`
+      const msg = (e as Error).message
+      const isJsonError = msg.includes('JSON') && msg.includes('position')
+      statusEl.textContent = isJsonError
+        ? 'Face models failed to load. Run: npm run download-models (in frontend folder)'
+        : `Error: ${msg}`
       return
     }
     if (!embedding) {
@@ -231,7 +235,14 @@ export function renderBank(): HTMLElement {
         embedding,
       }),
     })
-    const data = await res.json()
+    let data: { user_id?: string; error?: string }
+    try {
+      const text = await res.text()
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      statusEl.textContent = `API returned invalid response (status ${res.status}). Check Supabase URL and that Edge Functions are deployed.`
+      return
+    }
     if (data.error) {
       statusEl.textContent = data.error
       return
