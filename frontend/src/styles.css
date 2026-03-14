@@ -4,11 +4,11 @@
 body { margin: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #050810; color: #e2e8f0; min-height: 100vh; }
 #app { max-width: 520px; margin: 0 auto; padding: 1.5rem; }
 #app.full-width { max-width: none; padding: 0; }
-#app.app-portal { max-width: 640px; padding: 1.5rem 2rem; }
+#app.app-portal { max-width: 720px; padding: 1.5rem 2rem; }
 .hidden { display: none !important; }
 
 .app-wrapper {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0 auto;
 }
 

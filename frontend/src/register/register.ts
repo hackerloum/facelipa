@@ -9,50 +9,66 @@ function setUserId(id: string): void {
   localStorage.setItem(STORAGE_KEY, id)
 }
 
+function addField(
+  form: HTMLElement,
+  id: string,
+  label: string,
+  type: string,
+  placeholder: string,
+  required: boolean,
+  options?: [string, string][]
+): void {
+  form.appendChild(el('label', { htmlFor: id }, label + (required ? ' *' : '')))
+  if (options) {
+    const select = el('select', { id })
+    options.forEach(([v, t]) => select.appendChild(el('option', { value: v }, t)))
+    form.appendChild(select)
+  } else {
+    form.appendChild(el('input', {
+      id,
+      type,
+      placeholder,
+      ...(required && { required: true }),
+    }) as HTMLInputElement)
+  }
+}
+
 export function renderRegister(onNavigate: (path: string) => void): HTMLElement {
   const root = el('div', { className: 'register-page' })
 
   const header = el('header', { className: 'register-header' })
-  header.appendChild(el('h1', { className: 'register-title' }, 'Create your account'))
-  header.appendChild(el('p', { className: 'register-subtitle' }, 'Register once. Pay with your face everywhere.'))
+  header.appendChild(el('h1', { className: 'register-title' }, 'Create your Tembo account'))
+  header.appendChild(el('p', { className: 'register-subtitle' }, 'Register with Tembo. Pay with your face everywhere.'))
   root.appendChild(header)
 
   const card = el('div', { className: 'register-card' })
   const form = el('form', { className: 'register-form' })
 
-  const fields = [
-    { id: 'first-name', label: 'First name', type: 'text', placeholder: 'John', required: true },
-    { id: 'last-name', label: 'Last name', type: 'text', placeholder: 'Doe', required: true },
-    { id: 'phone', label: 'Phone number', type: 'tel', placeholder: '255712345678', required: true },
-    { id: 'email', label: 'Email (optional)', type: 'email', placeholder: 'john@example.com', required: false },
-  ]
+  form.appendChild(el('h3', { className: 'register-section-title' }, 'Personal information'))
+  addField(form, 'first-name', 'First name', 'text', 'John', true)
+  addField(form, 'last-name', 'Last name', 'text', 'Doe', true)
+  addField(form, 'phone', 'Phone number', 'tel', '255712345678', true)
+  addField(form, 'email', 'Email', 'email', 'john@example.com', true)
+  addField(form, 'date-of-birth', 'Date of birth', 'date', '', true)
+  addField(form, 'gender', 'Gender', 'text', '', true, [['', 'Select'], ['M', 'Male'], ['F', 'Female']])
 
-  fields.forEach((f) => {
-    form.appendChild(el('label', { htmlFor: f.id }, f.label + (f.required ? ' *' : '')))
-    form.appendChild(el('input', {
-      id: f.id,
-      type: f.type,
-      placeholder: f.placeholder,
-      ...(f.required && { required: true }),
-    }) as HTMLInputElement)
-  })
+  form.appendChild(el('h3', { className: 'register-section-title' }, 'ID details'))
+  addField(form, 'id-type', 'ID type', 'text', '', true, [
+    ['NATIONAL_ID', 'National ID'],
+    ['DRIVER_LICENSE', 'Driver License'],
+    ['VOTER_ID', 'Voter ID'],
+    ['INTL_PASSPORT', 'Passport'],
+  ])
+  addField(form, 'id-number', 'ID number', 'text', 'e.g. 19901234-12345-12345-12', true)
+  addField(form, 'id-issue-date', 'ID issue date', 'date', '', true)
+  addField(form, 'id-expiry-date', 'ID expiry date', 'date', '', true)
 
-  form.appendChild(el('label', { htmlFor: 'wallet-provider' }, 'Mobile money provider *'))
-  const providerSelect = el('select', { id: 'wallet-provider' })
-  ;['mpesa', 'airtel', 'halopesa', 'mixx'].forEach((p) => {
-    providerSelect.appendChild(
-      el('option', { value: p }, p === 'mpesa' ? 'M-Pesa' : p.charAt(0).toUpperCase() + p.slice(1))
-    )
-  })
-  form.appendChild(providerSelect)
+  form.appendChild(el('h3', { className: 'register-section-title' }, 'Address'))
+  addField(form, 'street', 'Street address', 'text', '123 Main St', true)
+  addField(form, 'city', 'City', 'text', 'Dar es Salaam', true)
+  addField(form, 'postal-code', 'Postal code', 'text', '11101', true)
 
-  form.appendChild(el('label', { htmlFor: 'wallet-phone' }, 'Wallet phone number *'))
-  form.appendChild(el('input', {
-    id: 'wallet-phone',
-    type: 'tel',
-    placeholder: '255712345678 (same as above for M-Pesa)',
-  }) as HTMLInputElement)
-
+  form.appendChild(el('h3', { className: 'register-section-title' }, 'Face verification'))
   form.appendChild(el('label', { htmlFor: 'face-photo' }, 'Face photo *'))
   form.appendChild(el('p', { className: 'register-hint' }, 'Upload a clear photo of your face. Look straight at the camera.'))
   form.appendChild(el('input', { id: 'face-photo', type: 'file', accept: 'image/*' }) as HTMLInputElement)
@@ -60,22 +76,16 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
 
   const statusEl = el('p', { id: 'register-status', className: 'register-status' })
   form.appendChild(statusEl)
-
   form.appendChild(el('button', { id: 'btn-submit', type: 'button', className: 'register-btn', disabled: true }, 'Complete Registration'))
 
   form.addEventListener('submit', (e) => e.preventDefault())
-
   card.appendChild(form)
   root.appendChild(card)
 
   const signInLink = el('p', { className: 'register-signin' })
   signInLink.appendChild(document.createTextNode('Already have an account? '))
   const link = el('a', { href: '/bank' }, 'Sign in')
-  link.onclick = (e) => {
-    e.preventDefault()
-    onNavigate('/bank')
-  }
-  signInLink.appendChild(link)
+  link.onclick = (e) => { e.preventDefault(); onNavigate('/bank') }
   root.appendChild(signInLink)
 
   let faceFile: File | null = null
@@ -93,19 +103,31 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
   })
 
   root.querySelector('#btn-submit')!.addEventListener('click', async () => {
-    const firstName = (root.querySelector('#first-name') as HTMLInputElement).value.trim()
-    const lastName = (root.querySelector('#last-name') as HTMLInputElement).value.trim()
-    const phone = (root.querySelector('#phone') as HTMLInputElement).value.trim()
-    const email = (root.querySelector('#email') as HTMLInputElement).value.trim()
-    const walletProvider = (root.querySelector('#wallet-provider') as HTMLSelectElement).value
-    const walletPhone = (root.querySelector('#wallet-phone') as HTMLInputElement).value.trim() || phone
+    const get = (id: string) => (root.querySelector(`#${id}`) as HTMLInputElement | HTMLSelectElement)?.value?.trim()
+    const firstName = get('first-name')
+    const lastName = get('last-name')
+    const phone = get('phone')
+    const email = get('email')
+    const dateOfBirth = get('date-of-birth')
+    const gender = get('gender')
+    const idType = get('id-type')
+    const idNumber = get('id-number')
+    const idIssueDate = get('id-issue-date')
+    const idExpiryDate = get('id-expiry-date')
+    const street = get('street')
+    const city = get('city')
+    const postalCode = get('postal-code')
 
     statusEl.textContent = ''
-    if (!firstName) { statusEl.textContent = 'First name is required'; statusEl.className = 'register-status error'; return }
-    if (!lastName) { statusEl.textContent = 'Last name is required'; statusEl.className = 'register-status error'; return }
-    if (!phone) { statusEl.textContent = 'Phone number is required'; statusEl.className = 'register-status error'; return }
-    if (!walletProvider) { statusEl.textContent = 'Select a wallet provider'; statusEl.className = 'register-status error'; return }
-    if (!walletPhone) { statusEl.textContent = 'Wallet phone number is required'; statusEl.className = 'register-status error'; return }
+    const required: [string, string][] = [
+      ['first-name', 'First name'], ['last-name', 'Last name'], ['phone', 'Phone number'], ['email', 'Email'],
+      ['date-of-birth', 'Date of birth'], ['gender', 'Gender'], ['id-type', 'ID type'], ['id-number', 'ID number'],
+      ['id-issue-date', 'ID issue date'], ['id-expiry-date', 'ID expiry date'], ['street', 'Street address'],
+      ['city', 'City'], ['postal-code', 'Postal code'],
+    ]
+    for (const [id, label] of required) {
+      if (!get(id)) { statusEl.textContent = `${label} is required`; statusEl.className = 'register-status error'; return }
+    }
     if (!faceFile) { statusEl.textContent = 'Upload your face photo'; statusEl.className = 'register-status error'; return }
 
     statusEl.className = 'register-status'
@@ -125,17 +147,24 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
       return
     }
 
-    statusEl.textContent = 'Registering...'
+    statusEl.textContent = 'Creating Tembo wallet...'
 
-    const res = await fetchApi('/register-customer', {
+    const res = await fetchApi('/register-customer-tembo', {
       method: 'POST',
       body: JSON.stringify({
         first_name: firstName,
         last_name: lastName,
         phone_number: phone,
-        email: email || undefined,
-        wallet_provider: walletProvider,
-        wallet_phone: walletPhone,
+        email,
+        date_of_birth: dateOfBirth,
+        gender,
+        id_type: idType,
+        id_number: idNumber,
+        id_issue_date: idIssueDate,
+        id_expiry_date: idExpiryDate,
+        street,
+        city,
+        postal_code: postalCode,
         embedding,
       }),
     })
@@ -151,7 +180,6 @@ export function renderRegister(onNavigate: (path: string) => void): HTMLElement 
     setUserId(data.user_id)
     statusEl.textContent = 'Registration successful! Redirecting...'
     statusEl.className = 'register-status success'
-
     setTimeout(() => onNavigate('/bank'), 1500)
   })
 

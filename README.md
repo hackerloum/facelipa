@@ -97,6 +97,7 @@ supabase functions deploy tembo-webhook --no-verify-jwt
 supabase functions deploy create-tembo-wallet --no-verify-jwt
 supabase functions deploy deposit --no-verify-jwt
 supabase functions deploy register-customer --no-verify-jwt
+supabase functions deploy register-customer-tembo --no-verify-jwt
 supabase functions deploy account-summary --no-verify-jwt
 ```
 

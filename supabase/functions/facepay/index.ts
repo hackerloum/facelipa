@@ -103,7 +103,8 @@ Deno.serve(async (req) => {
       .limit(1)
       .single()
 
-    const phone = wallet?.provider_wallet_id ?? profile.phone_number
+    // Tembo wallet stores accountNo; STK push needs phone. Mobile money wallets store phone.
+    const phone = wallet?.provider === 'tembo' ? profile.phone_number : (wallet?.provider_wallet_id ?? profile.phone_number)
     if (!phone || phone === 'pending') {
       return new Response(
         JSON.stringify({ error: 'No wallet linked - add a wallet first' }),

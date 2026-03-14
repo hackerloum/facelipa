@@ -8,6 +8,7 @@ function showView(path: string): void {
   const normalized = path.replace(/\/$/, '') || '/'
 
   if (normalized === '/' || normalized === '') {
+    document.title = 'FaceLipa | Pay with your face'
     document.getElementById('app')!.classList.add('full-width')
     document.getElementById('app')!.classList.remove('app-portal')
     mount(app, renderLanding((p) => {
@@ -21,6 +22,7 @@ function showView(path: string): void {
   document.getElementById('app')!.classList.add('app-portal')
 
   if (normalized === '/merchant') {
+    document.title = 'Merchant | FaceLipa'
     import('./merchant/merchant').then(({ renderMerchant }) => {
       const wrapper = el('div', { className: 'app-wrapper' })
       const nav = el('nav', { className: 'app-nav' })
@@ -46,15 +48,18 @@ function showView(path: string): void {
   }
 
   if (normalized === '/register') {
+    document.title = 'Register | FaceLipa'
     import('./register/register').then(({ renderRegister }) => {
       const wrapper = el('div', { className: 'app-wrapper' })
       const nav = el('nav', { className: 'app-nav' })
       const logoLink = el('a', { href: '/', className: 'app-nav-logo' }, 'FaceLipa')
       const homeLink = el('a', { href: '/' }, 'Home')
-      const bankLink = el('a', { href: '/bank', className: 'active' }, 'Customer')
+      const registerLink = el('a', { href: '/register', className: 'active' }, 'Register')
+      const bankLink = el('a', { href: '/bank' }, 'Customer')
       const merchantLink = el('a', { href: '/merchant' }, 'Merchant')
       logoLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
       homeLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      registerLink.onclick = (e) => { e.preventDefault() }
       bankLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/bank'); showView('/bank') }
       merchantLink.onclick = (e) => {
         e.preventDefault()
@@ -64,6 +69,7 @@ function showView(path: string): void {
       nav.appendChild(logoLink)
       const navLinks = el('div', { className: 'app-nav-links' })
       navLinks.appendChild(homeLink)
+      navLinks.appendChild(registerLink)
       navLinks.appendChild(bankLink)
       navLinks.appendChild(merchantLink)
       nav.appendChild(navLinks)
@@ -78,6 +84,7 @@ function showView(path: string): void {
   }
 
   if (normalized === '/bank') {
+    document.title = 'Customer | FaceLipa'
     import('./bank/bank').then(({ renderBank }) => {
       const wrapper = el('div', { className: 'app-wrapper' })
       const nav = el('nav', { className: 'app-nav' })
