@@ -1,6 +1,6 @@
 import './bank.css'
 import { el } from '../lib/dom'
-import { supabase, fetchWithAuth } from '../lib/supabase'
+import { supabase, fetchWithAuth, fetchApi } from '../lib/supabase'
 import { getFaceEmbeddingFromFile } from '../lib/face'
 
 const STORAGE_KEY = 'facelipa_user_id'
@@ -27,14 +27,38 @@ export function renderBank(): HTMLElement {
 
   const authView = el('div', { id: 'auth-view', className: 'view' })
   const authCard = el('div', { className: 'auth-card' })
-  authCard.appendChild(el('h2', {}, 'Get Started'))
-  const btnOpen = el('button', { id: 'btn-open-account', className: 'btn btn-primary' }, 'Open an account')
-  authCard.appendChild(btnOpen)
-  authCard.appendChild(el('p', { className: 'auth-divider' }, 'or'))
+
+  authCard.appendChild(el('h2', {}, 'Register as Customer'))
+
+  const regForm = el('div', { className: 'reg-form' })
+  regForm.appendChild(el('label', { htmlFor: 'reg-first-name' }, 'First name *'))
+  regForm.appendChild(el('input', { id: 'reg-first-name', type: 'text', placeholder: 'John' }) as HTMLInputElement)
+  regForm.appendChild(el('label', { htmlFor: 'reg-last-name' }, 'Last name *'))
+  regForm.appendChild(el('input', { id: 'reg-last-name', type: 'text', placeholder: 'Doe' }) as HTMLInputElement)
+  regForm.appendChild(el('label', { htmlFor: 'reg-phone' }, 'Phone number *'))
+  regForm.appendChild(el('input', { id: 'reg-phone', type: 'tel', placeholder: '255712345678' }) as HTMLInputElement)
+  regForm.appendChild(el('label', { htmlFor: 'reg-email' }, 'Email'))
+  regForm.appendChild(el('input', { id: 'reg-email', type: 'email', placeholder: 'john@example.com' }) as HTMLInputElement)
+  regForm.appendChild(el('label', { htmlFor: 'reg-wallet-provider' }, 'Mobile money provider *'))
+  const providerSelect = el('select', { id: 'reg-wallet-provider' })
+  ;['mpesa', 'airtel', 'halopesa', 'mixx'].forEach(p => {
+    providerSelect.appendChild(el('option', { value: p }, p === 'mpesa' ? 'M-Pesa' : p.charAt(0).toUpperCase() + p.slice(1)))
+  })
+  regForm.appendChild(providerSelect)
+  regForm.appendChild(el('label', { htmlFor: 'reg-wallet-phone' }, 'Wallet phone number *'))
+  regForm.appendChild(el('input', { id: 'reg-wallet-phone', type: 'tel', placeholder: '255712345678 (same as above if M-Pesa)' }) as HTMLInputElement)
+  regForm.appendChild(el('label', { htmlFor: 'reg-face' }, 'Face photo *'))
+  regForm.appendChild(el('p', { className: 'hint' }, 'Upload a clear photo of your face. Look straight at the camera.'))
+  regForm.appendChild(el('input', { id: 'reg-face', type: 'file', accept: 'image/*' }) as HTMLInputElement)
+  regForm.appendChild(el('div', { id: 'reg-face-preview', className: 'preview-area' }))
+  regForm.appendChild(el('p', { id: 'reg-status', className: 'status' }))
+  regForm.appendChild(el('button', { id: 'btn-register', className: 'btn btn-primary', disabled: true }, 'Complete Registration'))
+  authCard.appendChild(regForm)
+
+  authCard.appendChild(el('p', { className: 'auth-divider' }, 'Already have an account?'))
   const signin = el('div', { className: 'auth-signin' })
   signin.appendChild(el('label', { htmlFor: 'input-user-id' }, 'Sign in with User ID'))
-  const inputUserId = el('input', { id: 'input-user-id', type: 'text', placeholder: 'Paste your UUID' }) as HTMLInputElement
-  signin.appendChild(inputUserId)
+  signin.appendChild(el('input', { id: 'input-user-id', type: 'text', placeholder: 'Paste your UUID' }) as HTMLInputElement)
   signin.appendChild(el('button', { id: 'btn-sign-in', className: 'btn btn-secondary' }, 'Sign in'))
   authCard.appendChild(signin)
   authView.appendChild(authCard)
@@ -67,10 +91,10 @@ export function renderBank(): HTMLElement {
 
   const enrollPanel = el('section', { id: 'tab-enroll', className: 'tab-panel' })
   enrollPanel.appendChild(el('h2', {}, 'Enroll Face'))
-  enrollPanel.appendChild(el('p', { className: 'hint' }, "Upload a clear photo of your face. We'll use it to verify your identity for payments."))
+  enrollPanel.appendChild(el('p', { className: 'hint' }, "Update your face photo. We'll use it to verify your identity for payments."))
   enrollPanel.appendChild(el('input', { id: 'enroll-file', type: 'file', accept: 'image/*' }) as HTMLInputElement)
   enrollPanel.appendChild(el('div', { id: 'enroll-preview', className: 'preview-area' }))
-  enrollPanel.appendChild(el('button', { id: 'btn-enroll', className: 'btn btn-primary', disabled: true }, 'Enroll'))
+  enrollPanel.appendChild(el('button', { id: 'btn-enroll', className: 'btn btn-primary', disabled: true }, 'Update Face'))
   enrollPanel.appendChild(el('p', { id: 'enroll-status', className: 'status' }))
   tabContent.appendChild(enrollPanel)
 
@@ -78,12 +102,11 @@ export function renderBank(): HTMLElement {
   walletsPanel.appendChild(el('h2', {}, 'Wallets'))
   const walletForm = el('div', { className: 'wallet-form' })
   walletForm.appendChild(el('label', { htmlFor: 'wallet-provider' }, 'Provider'))
-  const providerSelect = el('select', { id: 'wallet-provider' })
+  const providerSelect2 = el('select', { id: 'wallet-provider' })
   ;['mpesa', 'airtel', 'halopesa', 'mixx'].forEach(p => {
-    const opt = el('option', { value: p }, p === 'mpesa' ? 'M-Pesa' : p.charAt(0).toUpperCase() + p.slice(1))
-    providerSelect.appendChild(opt)
+    providerSelect2.appendChild(el('option', { value: p }, p === 'mpesa' ? 'M-Pesa' : p.charAt(0).toUpperCase() + p.slice(1)))
   })
-  walletForm.appendChild(providerSelect)
+  walletForm.appendChild(providerSelect2)
   walletForm.appendChild(el('label', { htmlFor: 'wallet-id' }, 'Phone / Wallet ID'))
   walletForm.appendChild(el('input', { id: 'wallet-id', type: 'text', placeholder: '255712345678' }) as HTMLInputElement)
   walletForm.appendChild(el('button', { id: 'btn-link-wallet', className: 'btn btn-primary' }, 'Link Wallet'))
@@ -152,13 +175,74 @@ export function renderBank(): HTMLElement {
     }
   }
 
-  btnOpen.onclick = () => {
-    const id = crypto.randomUUID()
-    setUserId(id)
+  let regFaceFile: File | null = null
+  root.querySelector('#reg-face')!.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    regFaceFile = file
+    const preview = root.querySelector('#reg-face-preview')!
+    preview.innerHTML = ''
+    const img = document.createElement('img')
+    img.src = URL.createObjectURL(file)
+    img.alt = 'Preview'
+    preview.appendChild(img)
+    ;(root.querySelector('#btn-register') as HTMLButtonElement).disabled = false
+  })
+
+  root.querySelector('#btn-register')!.addEventListener('click', async () => {
+    const firstName = (root.querySelector('#reg-first-name') as HTMLInputElement).value.trim()
+    const lastName = (root.querySelector('#reg-last-name') as HTMLInputElement).value.trim()
+    const phone = (root.querySelector('#reg-phone') as HTMLInputElement).value.trim()
+    const email = (root.querySelector('#reg-email') as HTMLInputElement).value.trim()
+    const walletProvider = (root.querySelector('#reg-wallet-provider') as HTMLSelectElement).value
+    const walletPhone = (root.querySelector('#reg-wallet-phone') as HTMLInputElement).value.trim() || phone
+
+    const statusEl = root.querySelector('#reg-status') as HTMLElement
+    if (!firstName) { statusEl.textContent = 'First name is required'; return }
+    if (!lastName) { statusEl.textContent = 'Last name is required'; return }
+    if (!phone) { statusEl.textContent = 'Phone number is required'; return }
+    if (!walletProvider) { statusEl.textContent = 'Select a wallet provider'; return }
+    if (!walletPhone) { statusEl.textContent = 'Wallet phone number is required'; return }
+    if (!regFaceFile) { statusEl.textContent = 'Upload your face photo'; return }
+
+    statusEl.textContent = 'Extracting face...'
+    let embedding: number[] | null = null
+    try {
+      embedding = await getFaceEmbeddingFromFile(regFaceFile)
+    } catch (e) {
+      statusEl.textContent = `Error: ${(e as Error).message}`
+      return
+    }
+    if (!embedding) {
+      statusEl.textContent = 'No face detected. Use a clearer photo looking straight at the camera.'
+      return
+    }
+
+    statusEl.textContent = 'Registering...'
+    const res = await fetchApi('/register-customer', {
+      method: 'POST',
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        phone_number: phone,
+        email: email || undefined,
+        wallet_provider: walletProvider,
+        wallet_phone: walletPhone,
+        embedding,
+      }),
+    })
+    const data = await res.json()
+    if (data.error) {
+      statusEl.textContent = data.error
+      return
+    }
+    setUserId(data.user_id)
+    statusEl.textContent = ''
     showMainView()
     loadAccountSummary()
-    alert(`Account created! Your User ID: ${id}\nSave this to sign in later.`)
-  }
+    alert('Registration successful! You can now pay with your face.')
+  })
+
   root.querySelector('#btn-sign-in')!.addEventListener('click', () => {
     const id = (root.querySelector('#input-user-id') as HTMLInputElement).value.trim()
     if (!id) { alert('Enter your User ID'); return }
@@ -193,7 +277,9 @@ export function renderBank(): HTMLElement {
     enrollFile = file
     const preview = root.querySelector('#enroll-preview')!
     preview.innerHTML = ''
-    const img = el('img', { src: URL.createObjectURL(file), alt: 'Preview' })
+    const img = document.createElement('img')
+    img.src = URL.createObjectURL(file)
+    img.alt = 'Preview'
     preview.appendChild(img)
     ;(root.querySelector('#btn-enroll') as HTMLButtonElement).disabled = false
   })
@@ -206,11 +292,11 @@ export function renderBank(): HTMLElement {
     try {
       const embedding = await getFaceEmbeddingFromFile(enrollFile)
       if (!embedding) { statusEl.textContent = 'No face detected. Try a clearer photo.'; return }
-      statusEl.textContent = 'Enrolling...'
+      statusEl.textContent = 'Updating...'
       const res = await fetchWithAuth('/enroll-face', { method: 'POST', userId, body: JSON.stringify({ embedding }) })
       const data = await res.json()
       if (data.error) { statusEl.textContent = data.error; return }
-      statusEl.textContent = 'Face enrolled successfully!'
+      statusEl.textContent = 'Face updated successfully!'
     } catch (e) {
       statusEl.textContent = `Error: ${(e as Error).message}`
     }

@@ -59,6 +59,24 @@ body {
   color: #64748b;
 }
 
+.reg-form {
+  text-align: left;
+  margin-bottom: 1rem;
+}
+
+.reg-form label,
+.reg-form input,
+.reg-form select {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.reg-form input,
+.reg-form select {
+  margin-bottom: 1rem;
+}
+
 .auth-signin {
   text-align: left;
 }
