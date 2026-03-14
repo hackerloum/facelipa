@@ -159,6 +159,10 @@ After deploy: `https://your-app.vercel.app/` (customer), `https://your-app.verce
 
 MVP uses permissive dev policies (`using (true)`). **Replace these before production** with proper RLS policies.
 
+## Android App
+
+See **[ANDROID_APP_PROMPT.md](ANDROID_APP_PROMPT.md)** for a complete build prompt to create a native Java Android app that integrates with this platform. It includes API endpoint specs, request/response formats, face embedding requirements (128-d), and suggested project structure.
+
 ## Repository Structure
 
 ```
