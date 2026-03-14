@@ -32,14 +32,17 @@ supabase db push
 # 001_init.sql, 002_payment_providers.sql, 003_customer_registration.sql
 ```
 
-### 2. Create a Merchant (for testing)
+### 2. Seed Mock Data (optional)
 
-Insert a test merchant in the SQL editor:
+Load example users, merchants, wallets, and transactions:
 
-```sql
-insert into merchants (name, api_key) values ('Test Merchant', 'test-api-key-123');
--- Note the returned id for merchant login
+```bash
+# Option A: Supabase SQL Editor - paste contents of supabase/seed.sql
+# Option B: With Supabase CLI (resets DB and applies migrations + seed)
+supabase db reset
 ```
+
+See [supabase/seed.sql](supabase/seed.sql) for test user IDs and merchant credentials.
 
 ### 3. Download face-api.js Models
 
