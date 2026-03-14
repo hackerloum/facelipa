@@ -1,6 +1,51 @@
 # FaceLipa: User Fields & Database Flow
 
-This document describes what fields users fill in, how they map to the database, and how data is fetched and used across the app.
+This document describes what fields users fill in, how they map to the database, and how the **entire registration flow is linked with Supabase**—from frontend to Edge Functions to PostgreSQL.
+
+---
+
+## 0. Supabase Integration Overview
+
+The registration flow is fully integrated with **Supabase** across all layers:
+
+| Layer | Supabase Component | How It's Used |
+|-------|--------------------|---------------|
+| **Frontend** | Supabase client + Edge Functions URL | `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` → `fetchApi()` calls `{url}/functions/v1/{path}` |
+| **Edge Functions** | Supabase Postgres | `createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)` → INSERT/SELECT on tables |
+| **Database** | Supabase PostgreSQL | `user_profiles`, `wallets`, `face_embeddings`, `transactions`, `merchants` |
+| **Auth/Session** | localStorage + x-user-id | `external_user_id` stored in localStorage; sent as `x-user-id` header to Edge Functions |
+
+### Connection Flow
+
+```
+Frontend (Vite)
+    │
+    │  VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+    │
+    ├──► Supabase Client (direct DB access for bank wallet list, etc.)
+    │         └── supabase.from('user_profiles').select(...)
+    │
+    └──► Supabase Edge Functions
+              │
+              │  fetchApi('/register-customer-tembo')  →  POST https://{project}.supabase.co/functions/v1/register-customer-tembo
+              │  fetchWithAuth('/account-summary')    →  GET  https://{project}.supabase.co/functions/v1/account-summary  (x-user-id)
+              │
+              └──► Each Edge Function uses:
+                       createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))
+                       supabase.from('user_profiles').insert(...)
+                       supabase.from('wallets').select(...)
+                       supabase.rpc('match_face_embedding', ...)
+```
+
+### Supabase Tables Used in Registration
+
+| Table | Used By | Operations |
+|-------|---------|------------|
+| `user_profiles` | register-customer, register-customer-tembo, account-summary, facepay, charge-by-face | INSERT, SELECT |
+| `wallets` | register-customer, register-customer-tembo, account-summary, facepay, charge-by-face | INSERT, SELECT |
+| `face_embeddings` | register-customer, register-customer-tembo, facepay, charge-by-face | INSERT, SELECT, RPC match |
+| `transactions` | facepay, charge-by-face, account-summary | INSERT, SELECT, UPDATE |
+| `merchants` | charge-by-face | SELECT |
 
 ---
 
@@ -51,14 +96,17 @@ This document describes what fields users fill in, how they map to the database,
 ### Registration (Tembo) – `register-customer-tembo`
 
 ```
-User fills form
+User fills form (Frontend)
        ↓
 Frontend: face-api.js extracts 128-d embedding from photo
        ↓
-POST /functions/v1/register-customer-tembo
+Frontend: fetchApi('/register-customer-tembo')
+       → POST {VITE_SUPABASE_URL}/functions/v1/register-customer-tembo
+       ↓
+Supabase Edge Function (register-customer-tembo)
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. INSERT user_profiles                                         │
+│ 1. Supabase: supabase.from('user_profiles').insert(...)         │
 │    - external_user_id (new UUID)                                │
 │    - phone_number (normalized: 255XXXXXXXXX)                    │
 │    - first_name, last_name, email                               │
@@ -66,13 +114,13 @@ POST /functions/v1/register-customer-tembo
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. Tembo API: createTemboWallet (KYC)                           │
-│    - Sends: firstName, lastName, DOB, gender, ID, address, etc. │
+│ 2. Tembo API: createTemboWallet (external KYC)                  │
+│    - Sends: firstName, lastName, DOB, gender, ID, address, etc.│
 │    - Returns: accountNo (Tembo wallet ID)                       │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 3. INSERT wallets                                               │
+│ 3. Supabase: supabase.from('wallets').insert(...)                │
 │    - user_id (from step 1)                                      │
 │    - provider = 'tembo'                                         │
 │    - provider_wallet_id = accountNo                             │
@@ -80,9 +128,9 @@ POST /functions/v1/register-customer-tembo
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 4. INSERT face_embeddings                                       │
+│ 4. Supabase: supabase.from('face_embeddings').insert(...)        │
 │    - user_id (from step 1)                                      │
-│    - embedding = [128 floats]                                   │
+│    - embedding = [128 floats] (pgvector)                        │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 Response: { user_id, tembo_account_no }
@@ -95,13 +143,16 @@ Frontend: localStorage.setItem('facelipa_user_id', user_id)
 ### Registration (Mobile Money) – `register-customer`
 
 ```
-POST /functions/v1/register-customer
+Frontend: fetchApi('/register-customer')
+       → POST {VITE_SUPABASE_URL}/functions/v1/register-customer
        ↓
-INSERT user_profiles (external_user_id, phone_number, first_name, last_name, email, account_balance=0)
+Supabase Edge Function (register-customer)
        ↓
-INSERT wallets (user_id, provider, provider_wallet_id=phone, currency='TZS')
+Supabase: supabase.from('user_profiles').insert(...)
        ↓
-INSERT face_embeddings (user_id, embedding)
+Supabase: supabase.from('wallets').insert(...)
+       ↓
+Supabase: supabase.from('face_embeddings').insert(...)
        ↓
 Response: { user_id }
 ```
@@ -110,25 +161,27 @@ Response: { user_id }
 
 ### Account Summary – `account-summary`
 
-**Request:** `GET /functions/v1/account-summary` with header `x-user-id: <external_user_id>`
+**Request:** `GET {SUPABASE_URL}/functions/v1/account-summary` with header `x-user-id: <external_user_id>`
 
 ```
+Frontend: fetchWithAuth('/account-summary', { userId })
+       ↓
+Supabase Edge Function (account-summary)
+       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. SELECT user_profiles                                         │
-│    WHERE external_user_id = x-user-id                           │
-│    → id, account_balance                                        │
+│ 1. Supabase: supabase.from('user_profiles')                     │
+│    .select('id, account_balance').eq('external_user_id', userId) │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. SELECT wallets                                               │
-│    WHERE user_id = profile.id                                   │
-│    → all columns                                                 │
+│ 2. Supabase: supabase.from('wallets')                           │
+│    .select('*').eq('user_id', profileId)                        │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 3. SELECT transactions                                          │
-│    WHERE user_id = profile.id                                   │
-│    ORDER BY created_at DESC LIMIT 5                             │
+│ 3. Supabase: supabase.from('transactions')                      │
+│    .select('*').eq('user_id', profileId)                        │
+│    .order('created_at', { ascending: false }).limit(5)          │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 Response: { balance, wallets, transactions }
@@ -138,70 +191,77 @@ Response: { balance, wallets, transactions }
 
 ### Face Pay (Customer self-pay) – `facepay`
 
-**Request:** `POST /functions/v1/facepay` with header `x-user-id`, body `{ embedding, amount, currency }`
+**Request:** `POST {SUPABASE_URL}/functions/v1/facepay` with header `x-user-id`, body `{ embedding, amount, currency }`
 
 ```
+Frontend: fetchWithAuth('/facepay', { userId, body: {...} })
+       ↓
+Supabase Edge Function (facepay)
+       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. SELECT user_profiles                                         │
-│    WHERE external_user_id = x-user-id                           │
-│    → id, account_balance, phone_number                          │
+│ 1. Supabase: supabase.from('user_profiles')                     │
+│    .select('id, account_balance, phone_number')                 │
+│    .eq('external_user_id', userId)                              │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. SELECT face_embeddings                                        │
-│    WHERE user_id = profile.id                                   │
-│    → verify embedding matches (cosine similarity ≥ 0.6)          │
+│ 2. Supabase: supabase.from('face_embeddings')                   │
+│    .select('embedding').eq('user_id', profile.id)               │
+│    → verify cosine similarity ≥ 0.6                             │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 3. SELECT transactions (sum PENDING)                            │
-│    → check available balance                                    │
+│ 3. Supabase: supabase.from('transactions')                      │
+│    .select('amount').eq('user_id', profile.id).eq('status','PENDING')│
+│    → sum for available balance                                  │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 4. SELECT wallets                                               │
-│    WHERE user_id = profile.id LIMIT 1                           │
-│    → id, provider, provider_wallet_id                           │
+│ 4. Supabase: supabase.from('wallets')                           │
+│    .select('id, provider, provider_wallet_id')                  │
+│    .eq('user_id', profile.id).limit(1).single()                 │
 └─────────────────────────────────────────────────────────────────┘
        ↓
-Phone for STK: provider='tembo' ? profile.phone_number : wallet.provider_wallet_id
+Supabase: supabase.from('transactions').insert(...) → STK push
        ↓
-INSERT transactions (PENDING) → initiatePayment (Snippe/Tembo STK)
-       ↓
-UPDATE transactions (snippe_charge_id or tembo_transaction_id)
+Supabase: supabase.from('transactions').update(...)
 ```
 
 ---
 
 ### Charge by Face (Merchant) – `charge-by-face`
 
-**Request:** `POST /functions/v1/charge-by-face` with headers `x-merchant-id`, `x-merchant-api-key`, body `{ embedding, amount, currency }`
+**Request:** `POST {SUPABASE_URL}/functions/v1/charge-by-face` with headers `x-merchant-id`, `x-merchant-api-key`, body `{ embedding, amount, currency }`
 
 ```
+Supabase Edge Function (charge-by-face)
+       ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. SELECT merchants                                              │
-│    WHERE id = x-merchant-id AND api_key = x-merchant-api-key    │
+│ 1. Supabase: supabase.from('merchants')                         │
+│    .select('id').eq('id', merchantId).eq('api_key', apiKey)     │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 2. RPC match_face_embedding(query_embedding)                    │
-│    → returns user_id with best similarity ≥ 0.6                 │
+│ 2. Supabase: supabase.rpc('match_face_embedding',               │
+│    { query_embedding, match_threshold: 0.6, match_count: 1 })   │
+│    → pgvector ANN search → user_id                              │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 3. SELECT user_profiles                                         │
-│    WHERE id = matched_user_id                                    │
-│    → id, account_balance, phone_number                           │
+│ 3. Supabase: supabase.from('user_profiles')                     │
+│    .select('id, account_balance, phone_number')                 │
+│    .eq('id', matchedUserId)                                     │
 └─────────────────────────────────────────────────────────────────┘
        ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 4. SELECT wallets                                               │
-│    WHERE user_id = profile.id LIMIT 1                           │
+│ 4. Supabase: supabase.from('wallets')                           │
+│    .select('id, provider, provider_wallet_id')                  │
+│    .eq('user_id', profile.id).limit(1).single()                 │
 └─────────────────────────────────────────────────────────────────┘
        ↓
-Phone for STK: provider='tembo' ? profile.phone_number : wallet.provider_wallet_id
+Supabase: supabase.from('transactions').insert(...) → STK push
        ↓
-INSERT transactions → initiatePayment → UPDATE transactions
+Supabase: supabase.from('transactions').update(...)
 ```
 
 ---
@@ -234,7 +294,7 @@ INSERT transactions → initiatePayment → UPDATE transactions
 
 ---
 
-## 5. Data Flow Diagram
+## 5. Data Flow Diagram (All via Supabase)
 
 ```
                     ┌──────────────────┐
@@ -242,21 +302,25 @@ INSERT transactions → initiatePayment → UPDATE transactions
                     │  Form (User)     │
                     └────────┬─────────┘
                              │
+              Frontend: fetchApi() → Supabase Edge Functions
+                             │
               ┌──────────────┴──────────────┐
               │                             │
               ▼                             ▼
     ┌─────────────────┐           ┌─────────────────────┐
     │ register-customer│           │register-customer-   │
-    │ (mobile money)   │           │tembo (Tembo KYC)    │
+    │ (Supabase Edge   │           │tembo (Supabase Edge │
+    │  Function)       │           │  Function)          │
     └────────┬────────┘           └──────────┬──────────┘
              │                               │
              └───────────────┬───────────────┘
                              │
                              ▼
               ┌──────────────────────────────┐
-              │  user_profiles               │
-              │  wallets                     │
-              │  face_embeddings             │
+              │  Supabase PostgreSQL         │
+              │  • user_profiles             │
+              │  • wallets                   │
+              │  • face_embeddings           │
               └──────────────────────────────┘
                              │
          ┌───────────────────┼───────────────────┐
@@ -264,11 +328,13 @@ INSERT transactions → initiatePayment → UPDATE transactions
          ▼                   ▼                   ▼
   ┌─────────────┐   ┌─────────────┐   ┌─────────────────┐
   │account-     │   │ facepay     │   │ charge-by-face  │
-  │summary      │   │ (customer)  │   │ (merchant)      │
+  │summary      │   │             │   │                 │
   │             │   │             │   │                 │
-  │ SELECT      │   │ SELECT +    │   │ RPC match_face  │
-  │ profile,    │   │ INSERT tx   │   │ + SELECT +      │
-  │ wallets,    │   │ + STK push  │   │ INSERT tx +     │
-  │ transactions│   │             │   │ STK push        │
+  │ Supabase    │   │ Supabase    │   │ Supabase        │
+  │ SELECT from │   │ SELECT +    │   │ RPC match_face   │
+  │ user_       │   │ INSERT tx   │   │ + SELECT +      │
+  │ profiles,   │   │ + STK push  │   │ INSERT tx +     │
+  │ wallets,    │   │             │   │ STK push        │
+  │ transactions│   │             │   │                 │
   └─────────────┘   └─────────────┘   └─────────────────┘
 ```
