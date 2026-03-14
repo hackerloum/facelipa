@@ -29,7 +29,7 @@ Run the migration in the Supabase SQL editor, or use the CLI:
 supabase db push
 
 # Or paste migrations in order into Supabase Dashboard → SQL Editor:
-# 001_init.sql, then 002_payment_providers.sql
+# 001_init.sql, 002_payment_providers.sql, 003_customer_registration.sql
 ```
 
 ### 2. Create a Merchant (for testing)
@@ -67,6 +67,9 @@ supabase secrets set SNIPPE_API_KEY=your-snippe-key
 supabase secrets set TEMBO_ACCOUNT_ID=your-tembo-account-id
 supabase secrets set TEMBO_SECRET_KEY=your-tembo-secret-key
 
+# Tembo webhook HMAC verification (only for Merchant Collection Accounts format; MOMO uses simple format)
+supabase secrets set TEMBO_HASH_KEY=your-base64-hash-key
+
 # Optional: prefer one provider (default: snippe)
 supabase secrets set PAYMENT_PROVIDER=snippe   # or tembo
 
@@ -91,7 +94,9 @@ supabase functions deploy facepay --no-verify-jwt
 supabase functions deploy charge-by-face --no-verify-jwt
 supabase functions deploy snippe-webhook --no-verify-jwt
 supabase functions deploy tembo-webhook --no-verify-jwt
+supabase functions deploy create-tembo-wallet --no-verify-jwt
 supabase functions deploy deposit --no-verify-jwt
+supabase functions deploy register-customer --no-verify-jwt
 supabase functions deploy account-summary --no-verify-jwt
 ```
 
@@ -104,7 +109,7 @@ supabase functions deploy --no-verify-jwt
 ### 6. Configure Webhooks
 
 - **Snippe**: In the Snippe dashboard, set webhook URL to `https://your-project.supabase.co/functions/v1/snippe-webhook`
-- **Tembo**: The callback URL is sent per-request; ensure `WEBHOOK_BASE_URL` is set. Tembo will POST to `.../tembo-webhook`
+- **Tembo**: The callback URL is sent per-request; ensure `WEBHOOK_BASE_URL` is set. Tembo will POST to `.../tembo-webhook`. Supports both MOMO collection (statusCode) and Merchant Collection Accounts (timestamp, signature, payload with HMAC verification via `TEMBO_HASH_KEY`).
 
 ### 7. Run Frontend
 

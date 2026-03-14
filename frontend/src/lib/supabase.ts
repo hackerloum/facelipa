@@ -15,6 +15,12 @@ export function getFunctionsBase(): string {
   return FUNCTIONS_BASE
 }
 
+export async function fetchApi(path: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers as HeadersInit)
+  headers.set('Content-Type', 'application/json')
+  return fetch(`${FUNCTIONS_BASE}${path}`, { ...options, headers })
+}
+
 export async function fetchWithAuth(
   path: string,
   options: RequestInit & { userId?: string; merchantId?: string; merchantApiKey?: string } = {}
