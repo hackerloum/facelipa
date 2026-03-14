@@ -1,32 +1,64 @@
 import './styles.css'
 import { el, mount } from './lib/dom'
-import { renderBank } from './bank/bank'
-import { renderMerchant } from './merchant/merchant'
+import { renderLanding } from './landing/landing'
 
 const app = document.getElementById('app')!
 
-function render(isMerchant: boolean): HTMLElement {
-  const wrapper = el('div', { className: 'app-wrapper' })
-  const nav = el('nav', { className: 'app-nav' })
-  const bankLink = el('a', { href: '/', className: !isMerchant ? 'active' : '' }, 'Bank')
-  const merchantLink = el('a', { href: '/merchant', className: isMerchant ? 'active' : '' }, 'Merchant')
-  bankLink.onclick = (e) => {
-    e.preventDefault()
-    window.history.pushState({}, '', '/')
-    mount(app, render(false))
+function showView(path: string): void {
+  const normalized = path.replace(/\/$/, '') || '/'
+
+  if (normalized === '/' || normalized === '') {
+    mount(app, renderLanding((p) => {
+      window.history.pushState({}, '', p)
+      showView(p)
+    }))
+    return
   }
-  merchantLink.onclick = (e) => {
-    e.preventDefault()
-    window.history.pushState({}, '', '/merchant')
-    mount(app, render(true))
+
+  if (normalized === '/merchant') {
+    import('./merchant/merchant').then(({ renderMerchant }) => {
+      const wrapper = el('div', { className: 'app-wrapper' })
+      const nav = el('nav', { className: 'app-nav' })
+      const bankLink = el('a', { href: '/' }, 'Home')
+      const merchantLink = el('a', { href: '/merchant', className: 'active' }, 'Merchant')
+      bankLink.onclick = (e) => { e.preventDefault(); window.history.pushState({}, '', '/'); showView('/') }
+      merchantLink.onclick = (e) => { e.preventDefault() }
+      nav.appendChild(bankLink)
+      nav.appendChild(merchantLink)
+      wrapper.appendChild(nav)
+      wrapper.appendChild(renderMerchant())
+      mount(app, wrapper)
+    })
+    return
   }
-  nav.appendChild(bankLink)
-  nav.appendChild(merchantLink)
-  wrapper.appendChild(nav)
-  wrapper.appendChild(isMerchant ? renderMerchant() : renderBank())
-  return wrapper
+
+  if (normalized === '/bank') {
+    import('./bank/bank').then(({ renderBank }) => {
+      const wrapper = el('div', { className: 'app-wrapper' })
+      const nav = el('nav', { className: 'app-nav' })
+      const bankLink = el('a', { href: '/bank', className: 'active' }, 'Bank')
+      const merchantLink = el('a', { href: '/merchant' }, 'Merchant')
+      bankLink.onclick = (e) => { e.preventDefault() }
+      merchantLink.onclick = (e) => {
+        e.preventDefault()
+        window.history.pushState({}, '', '/merchant')
+        showView('/merchant')
+      }
+      nav.appendChild(bankLink)
+      nav.appendChild(merchantLink)
+      wrapper.appendChild(nav)
+      wrapper.appendChild(renderBank())
+      mount(app, wrapper)
+    })
+    return
+  }
+
+  mount(app, renderLanding((p) => {
+    window.history.pushState({}, '', p)
+    showView(p)
+  }))
 }
 
-const path = window.location.pathname.replace(/\/$/, '') || '/'
-const isMerchant = path === '/merchant'
-mount(app, render(isMerchant))
+window.addEventListener('popstate', () => showView(window.location.pathname))
+
+showView(window.location.pathname)
