@@ -998,11 +998,63 @@
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 600px) {
-  .lp-nav { padding: 1rem; }
+@media (max-width: 768px) {
+  .lp-nav {
+    padding: 0.85rem 1rem;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .lp-nav-actions {
+    gap: 0.4rem;
+  }
+
+  /* Shrink nav buttons on tablet */
+  .lp-nav-actions .lp-btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+    box-shadow: 3px 3px 0 var(--border);
+  }
+
+  .lp-theme-toggle {
+    padding: 0.4rem;
+  }
+
+  .lp-logo span { font-size: 1.1rem; }
+
   .lp-hero-content { padding: 2.5rem 1.25rem; }
+  .lp-hero-title { font-size: clamp(3rem, 15vw, 5.5rem); }
   .lp-feat-body { padding: 1.5rem; }
-  .lp-hero-title { font-size: clamp(3.5rem, 18vw, 5.5rem); }
   .lp-step { grid-template-columns: 1fr; gap: 0.75rem; }
   .lp-footer { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .lp-nav {
+    padding: 0.75rem 0.85rem;
+  }
+
+  /* Hide "Customers" text on very small screens, keep icon feel */
+  .lp-nav-actions .lp-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .lp-logo span { display: none; } /* show only icon on tiny screens */
+
+  .lp-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lp-btn-lg {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lp-cta-btns {
+    flex-direction: column;
+  }
+
+  .lp-marquee-track { gap: 1.5rem; }
 }

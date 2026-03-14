@@ -84,7 +84,7 @@ export function renderAuth(onNavigate: (path: string) => void): HTMLElement {
     localStorage.setItem(STORAGE_KEY, uid)
     siStatus.textContent = 'Signed in! Redirecting...'
     siStatus.className = 'auth-status success'
-    setTimeout(() => onNavigate('/bank'), 600)
+    setTimeout(() => onNavigate('/customer'), 600)
   }
   signInView.appendChild(siBtn)
 
@@ -120,23 +120,94 @@ export function renderAuth(onNavigate: (path: string) => void): HTMLElement {
 
   registerView.appendChild(field('Wallet Phone *', 'r-wphone', 'tel', 'Same number if M-Pesa'))
 
-  // Face photo
+  // Status and submit button declared early so webcam/file handlers can reference them
+  const regStatus = el('p', { className: 'auth-status' })
+  const regBtn = el('button', { className: 'auth-btn', disabled: true }, 'Create Account →') as HTMLButtonElement
+
+  // Face photo — file upload + webcam capture
   const faceField = el('div', { className: 'auth-field' })
   faceField.appendChild(el('label', { className: 'auth-label', htmlFor: 'r-face' }, 'Face Photo *'))
-  faceField.appendChild(el('p', { className: 'auth-hint' }, 'Clear photo, face forward, good lighting. This is your payment credential.'))
+  faceField.appendChild(el('p', { className: 'auth-hint' }, 'Upload a photo or use your webcam — face forward, good lighting.'))
+
+  // Toggle row: Upload | Camera
+  const photoToggle = el('div', { className: 'auth-photo-toggle' })
+  const btnUpload = el('button', { className: 'auth-photo-opt active', type: 'button' }, '📁 Upload File')
+  const btnCamera = el('button', { className: 'auth-photo-opt', type: 'button' }, '📷 Use Camera')
+  photoToggle.appendChild(btnUpload)
+  photoToggle.appendChild(btnCamera)
+  faceField.appendChild(photoToggle)
+
+  // File upload row
+  const uploadRow = el('div', { className: 'auth-upload-row' })
   const faceInput = el('input', { className: 'auth-input', id: 'r-face', type: 'file', accept: 'image/*' }) as HTMLInputElement
+  uploadRow.appendChild(faceInput)
+  faceField.appendChild(uploadRow)
+
+  // Webcam row (hidden initially)
+  const cameraRow = el('div', { className: 'auth-camera-row hidden' })
+  const video = el('video', { autoplay: 'true', playsinline: 'true' }) as HTMLVideoElement
+  video.style.cssText = 'width:100%;max-height:220px;display:block;border:2px solid var(--border,#050505);background:#000;'
+  const captureBtn = el('button', { className: 'auth-btn', type: 'button', style: 'margin-top:0.75rem;' })
+  captureBtn.innerHTML = '📸 Capture Photo'
+  const canvas = document.createElement('canvas')
+  canvas.style.display = 'none'
+  cameraRow.appendChild(video)
+  cameraRow.appendChild(captureBtn)
+  cameraRow.appendChild(canvas)
+  faceField.appendChild(cameraRow)
+
   const facePreview = el('div', { className: 'auth-preview', id: 'r-face-preview' })
-  faceField.appendChild(faceInput)
   faceField.appendChild(facePreview)
   registerView.appendChild(faceField)
 
-  const regStatus = el('p', { className: 'auth-status' })
-  registerView.appendChild(regStatus)
-
-  const regBtn = el('button', { className: 'auth-btn', disabled: true }, 'Create Account →') as HTMLButtonElement
-  registerView.appendChild(regBtn)
-
   let faceFile: File | null = null
+  let stream: MediaStream | null = null
+
+  // Switch to upload mode
+  btnUpload.onclick = () => {
+    btnUpload.classList.add('active'); btnCamera.classList.remove('active')
+    uploadRow.classList.remove('hidden'); cameraRow.classList.add('hidden')
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null }
+  }
+
+  // Switch to camera mode
+  btnCamera.onclick = async () => {
+    btnCamera.classList.add('active'); btnUpload.classList.remove('active')
+    uploadRow.classList.add('hidden'); cameraRow.classList.remove('hidden')
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      video.srcObject = stream
+    } catch {
+      cameraRow.classList.add('hidden'); uploadRow.classList.remove('hidden')
+      btnUpload.classList.add('active'); btnCamera.classList.remove('active')
+      alert('Camera not available — please upload a photo instead.')
+    }
+  }
+
+  // Capture snapshot from webcam
+  captureBtn.onclick = () => {
+    canvas.width = video.videoWidth || 640
+    canvas.height = video.videoHeight || 480
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(video, 0, 0)
+    canvas.toBlob(blob => {
+      if (!blob) return
+      faceFile = new File([blob], 'webcam.jpg', { type: 'image/jpeg' })
+      const img = document.createElement('img')
+      img.src = URL.createObjectURL(faceFile)
+      facePreview.innerHTML = ''
+      facePreview.appendChild(img)
+      facePreview.classList.add('has-img')
+      regBtn.disabled = false
+    }, 'image/jpeg', 0.9)
+    // Stop stream after capture
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null }
+    cameraRow.classList.add('hidden'); uploadRow.classList.remove('hidden')
+    btnUpload.classList.add('active'); btnCamera.classList.remove('active')
+    captureBtn.innerHTML = '✓ Photo Captured'
+  }
+
+  // File input handler
   faceInput.onchange = () => {
     const f = faceInput.files?.[0]
     if (!f) return
@@ -149,6 +220,9 @@ export function renderAuth(onNavigate: (path: string) => void): HTMLElement {
     regBtn.disabled = false
     regStatus.textContent = ''
   }
+
+  registerView.appendChild(regStatus)
+  registerView.appendChild(regBtn)
 
   regBtn.onclick = async () => {
     const fname = (page.querySelector('#r-fname') as HTMLInputElement).value.trim()
@@ -206,7 +280,7 @@ export function renderAuth(onNavigate: (path: string) => void): HTMLElement {
       localStorage.setItem(STORAGE_KEY, data.user_id)
       regStatus.textContent = `✓ Registered! User ID: ${data.user_id}`
       regStatus.className = 'auth-status success'
-      setTimeout(() => onNavigate('/bank'), 1000)
+      setTimeout(() => onNavigate('/customer'), 1000)
     } catch (e) {
       regStatus.textContent = `Error: ${(e as Error).message}`
       regStatus.className = 'auth-status error'

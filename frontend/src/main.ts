@@ -75,16 +75,31 @@ function showView(path: string): void {
     return
   }
 
-  if (normalized === '/login') {
+  if (normalized === '/login' || normalized === '/register') {
+    document.title = normalized === '/register' ? 'Register | FaceLipa' : 'Sign In | FaceLipa'
     import('./auth/auth').then(({ renderAuth }) => {
       mount(app, renderAuth((p) => {
         window.history.pushState({}, '', p)
         showView(p)
       }))
+      if (normalized === '/register') {
+        setTimeout(() => { (document.getElementById('tab-register') as HTMLButtonElement | null)?.click() }, 50)
+      }
     }).catch(err => {
-      console.error('[FaceLipa] Failed to load /login:', err)
-      app.innerHTML = `<div style="padding:2rem;font-family:monospace;color:red">Failed to load login page: ${err.message}</div>`
+      console.error('[FaceLipa] Failed to load auth page:', err)
+      app.innerHTML = `<div style="padding:2rem;font-family:monospace;color:red">Error: ${err.message}</div>`
     })
+    return
+  }
+
+  if (normalized === '/merchant-login') {
+    document.title = 'Merchant Login | FaceLipa'
+    import('./auth/merchant-auth').then(({ renderMerchantAuth }) => {
+      mount(app, renderMerchantAuth((p) => {
+        window.history.pushState({}, '', p)
+        showView(p)
+      }))
+    }).catch(err => console.error('[FaceLipa]', err))
     return
   }
 
@@ -101,8 +116,9 @@ function showView(path: string): void {
   }
 
   if (normalized === '/merchant') {
+    document.title = 'Merchant Portal | FaceLipa'
     import('./merchant/merchant').then(({ renderMerchant }) => {
-      const wrapper = el('div', { className: 'app-wrapper' })
+      const wrapper = el('div', { className: 'app-wrapper portal-wrapper' })
       wrapper.appendChild(buildPortalNav('Merchant Portal', '/merchant-login', showView))
       wrapper.appendChild(renderMerchant())
       mount(app, wrapper)
@@ -110,9 +126,11 @@ function showView(path: string): void {
     return
   }
 
-  if (normalized === '/bank') {
+  if (normalized === '/bank' || normalized === '/customer') {
+    document.title = 'Customer Portal | FaceLipa'
     import('./bank/bank').then(({ renderBank }) => {
-      const wrapper = el('div', { className: 'app-wrapper' })
+      if (normalized === '/bank') { window.history.replaceState({}, '', '/customer') }
+      const wrapper = el('div', { className: 'app-wrapper portal-wrapper' })
       wrapper.appendChild(buildPortalNav('Customer Portal', '/login', showView))
       wrapper.appendChild(renderBank())
       mount(app, wrapper)

@@ -316,6 +316,41 @@ body {
 .auth-status.error { color: #FF3300; }
 .auth-status.success { color: #007700; }
 
+/* Photo toggle: Upload | Camera */
+.auth-photo-toggle {
+  display: flex;
+  border: 2px solid var(--border, #050505);
+  margin-bottom: 0.75rem;
+}
+
+.auth-photo-opt {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #4A4A4A);
+  border-right: 2px solid var(--border, #050505);
+  transition: background 0.08s, color 0.08s;
+}
+
+.auth-photo-opt:last-child { border-right: none; }
+.auth-photo-opt.active { background: var(--text, #050505); color: var(--bg, #F4F4F0); }
+.auth-photo-opt:hover:not(.active) { background: var(--card-bg, #fff); }
+
+.auth-camera-row {
+  margin-bottom: 0.75rem;
+}
+
+.auth-upload-row { margin-bottom: 0.75rem; }
+
+
+
 /* Merchant onboarding steps */
 .auth-steps {
   display: flex;
