@@ -116,8 +116,8 @@ npm run dev
 
 Open:
 
-- **Customer**: http://localhost:5173/bank.html
-- **Merchant**: http://localhost:5173/merchant.html
+- **Customer**: http://localhost:5173/ (or /bank)
+- **Merchant**: http://localhost:5173/merchant
 
 ### 8. Deploy to Vercel
 
@@ -132,13 +132,13 @@ Add environment variables in Vercel Dashboard → Settings → Environment Varia
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
-After deploy: `https://your-app.vercel.app/bank.html` (customer), `https://your-app.vercel.app/merchant.html` (merchant).
+After deploy: `https://your-app.vercel.app/` (customer), `https://your-app.vercel.app/merchant` (merchant).
 
 ## End-to-End Walkthrough
 
 ### Customer Flow
 
-1. **Register**: Open bank.html → "Open an account" → save the generated UUID.
+1. **Register**: Open / → "Open an account" → save the generated UUID.
 2. **Deposit**: Account tab → enter amount → Deposit (dev only).
 3. **Enroll Face**: Enroll Face tab → upload a clear photo → Enroll.
 4. **Link Wallet**: Wallets tab → select provider (M-Pesa, Airtel, etc.) → enter phone number (255XXXXXXXXX) → Link Wallet.
@@ -146,7 +146,7 @@ After deploy: `https://your-app.vercel.app/bank.html` (customer), `https://your-
 
 ### Merchant Flow
 
-1. **Login**: merchant.html → enter Merchant ID and API Key (from `merchants` table).
+1. **Login**: Open /merchant → enter Merchant ID and API Key (from `merchants` table).
 2. **Charge**: Upload customer face photo → enter amount + optional reference → Charge.
 3. Customer receives USSD push → enters PIN → webhook fires → balance deducted.
 
@@ -182,8 +182,7 @@ facelipa/
 │   │   ├── bank/
 │   │   ├── merchant/
 │   │   └── lib/
-│   ├── bank.html
-│   ├── merchant.html
+│   ├── index.html
 │   └── package.json
 └── README.md
 ```
